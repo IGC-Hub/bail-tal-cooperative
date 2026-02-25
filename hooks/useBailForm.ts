@@ -24,6 +24,11 @@ export function useBailForm(leaseId?: string) {
   }, [leaseId]);
 
   const loadFormData = async (id: string) => {
+    if (!supabase) {
+      console.warn('Supabase client not available');
+      return;
+    }
+    
     try {
       const { data, error } = await supabase
         .from('leases')
