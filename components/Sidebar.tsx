@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp, User, FileText, Calendar, DollarSign, ClipboardList, AlertCircle, Users, CheckCircle, FileCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -140,6 +140,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set([currentSection])
   );
+
+  // Auto-expand la section courante quand elle change (navigation Suivant/Précédent)
+  useEffect(() => {
+    setExpandedSections((prev) => {
+      if (prev.has(currentSection)) return prev;
+      return new Set([...prev, currentSection]);
+    });
+  }, [currentSection]);
 
   const toggleSection = (sectionId: string) => {
     const newExpanded = new Set(expandedSections);

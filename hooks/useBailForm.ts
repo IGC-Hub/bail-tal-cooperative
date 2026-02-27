@@ -4,6 +4,33 @@ import { useState, useCallback, useEffect } from 'react';
 import { BailFormData, FormState } from '@/types/bail';
 import { supabase } from '@/lib/supabase';
 
+// Ordre de navigation linéaire de toutes les sous-sections
+const NAVIGATION_ORDER: { sectionId: string; subsectionId: string }[] = [
+  { sectionId: 'intro', subsectionId: 'intro-1' },
+  { sectionId: 'section-a', subsectionId: 'a-1' },
+  { sectionId: 'section-a', subsectionId: 'a-2' },
+  { sectionId: 'section-b', subsectionId: 'b-1' },
+  { sectionId: 'section-b', subsectionId: 'b-2' },
+  { sectionId: 'section-b', subsectionId: 'b-3' },
+  { sectionId: 'section-c', subsectionId: 'c-1' },
+  { sectionId: 'section-d', subsectionId: 'd-1' },
+  { sectionId: 'section-d', subsectionId: 'd-2' },
+  { sectionId: 'section-e', subsectionId: 'e-1' },
+  { sectionId: 'section-e', subsectionId: 'e-2' },
+  { sectionId: 'section-e', subsectionId: 'e-3' },
+  { sectionId: 'section-e', subsectionId: 'e-4' },
+  { sectionId: 'section-e', subsectionId: 'e-5' },
+  { sectionId: 'section-e', subsectionId: 'e-6' },
+  { sectionId: 'section-f', subsectionId: 'f-1' },
+  { sectionId: 'section-h', subsectionId: 'h-1' },
+  { sectionId: 'section-h', subsectionId: 'h-2' },
+  { sectionId: 'mentions', subsectionId: 'mentions-1' },
+  { sectionId: 'finalisation', subsectionId: 'final-1' },
+  { sectionId: 'finalisation', subsectionId: 'final-2' },
+  { sectionId: 'finalisation', subsectionId: 'final-3' },
+  { sectionId: 'finalisation', subsectionId: 'final-4' },
+];
+
 export function useBailForm(leaseId?: string) {
   const [formState, setFormState] = useState<FormState>({
     currentSection: 'intro',
@@ -89,15 +116,47 @@ export function useBailForm(leaseId?: string) {
     }));
   }, []);
 
+  const getCurrentIndex = useCallback(() => {
+    return NAVIGATION_ORDER.findIndex(
+      (item) =>
+        item.sectionId === formState.currentSection &&
+        item.subsectionId === formState.currentSubsection
+    );
+  }, [formState.currentSection, formState.currentSubsection]);
+
+  const canGoNext = useCallback(() => {
+    const currentIndex = getCurrentIndex();
+    return currentIndex < NAVIGATION_ORDER.length - 1;
+  }, [getCurrentIndex]);
+
+  const canGoPrevious = useCallback(() => {
+    const currentIndex = getCurrentIndex();
+    return currentIndex > 0;
+  }, [getCurrentIndex]);
+
   const goToNext = useCallback(() => {
-    // TODO: Implémenter la logique de navigation
-    console.log('Navigation vers la section suivante');
-  }, []);
+    const currentIndex = getCurrentIndex();
+    if (currentIndex < NAVIGATION_ORDER.length - 1) {
+      const next = NAVIGATION_ORDER[currentIndex + 1];
+      setFormState((prev) => ({
+        ...prev,
+        currentSection: next.sectionId,
+        currentSubsection: next.subsectionId,
+      }));
+    }
+  }, [getCurrentIndex]);
 
   const goToPrevious = useCallback(() => {
-    // TODO: Implémenter la logique de navigation
-    console.log('Navigation vers la section précédente');
-  }, []);
+    const currentIndex = getCurrentIndex();
+    if (currentIndex > 0) {
+      const prev = NAVIGATION_ORDER[currentIndex - 1];
+      setFormState((p) => ({
+        ...p,
+        currentSection: prev.sectionId,
+        currentSubsection: prev.subsectionId,
+      }));
+    }
+  }, [getCurrentIndex]);
 
   const markSectionCompleted = useCallback((sectionId: string) => {
     setCompletedSections(prev => new Set([...prev, sectionId]));
@@ -112,6 +171,8 @@ export function useBailForm(leaseId?: string) {
     navigateToSection,
     goToNext,
     goToPrevious,
+    canGoNext: canGoNext(),
+    canGoPrevious: canGoPrevious(),
     markSectionCompleted,
   };
 }

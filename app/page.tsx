@@ -34,6 +34,8 @@ export default function BailFormPage() {
     navigateToSection,
     goToNext,
     goToPrevious,
+    canGoNext,
+    canGoPrevious,
   } = useBailForm();
 
   const renderCurrentSection = () => {
@@ -266,8 +268,8 @@ export default function BailFormPage() {
           onPrevious={goToPrevious}
           onNext={goToNext}
           onSave={saveFormData}
-          canGoPrevious={formState.currentSection !== 'intro'}
-          canGoNext={true}
+          canGoPrevious={canGoPrevious}
+          canGoNext={canGoNext}
           isSaving={isSaving}
           lastSaved={formState.lastSaved}
         />
