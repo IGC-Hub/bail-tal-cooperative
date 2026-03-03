@@ -83,8 +83,20 @@ bail-tal-coop/
 ├── lib/
 │   ├── supabase.ts          # Client Supabase
 │   └── utils.ts             # cn() helper (clsx + tailwind-merge)
-└── types/
-    └── bail.ts              # Types TypeScript (BailFormData, FormState, etc.)
+├── types/
+│   └── bail.ts              # Types TypeScript (BailFormData, FormState, etc.)
+├── next.config.js           # Configuration Next.js
+├── tailwind.config.ts       # Configuration Tailwind (couleurs tal-blue, tal-yellow)
+├── tsconfig.json            # Configuration TypeScript
+├── postcss.config.js        # Configuration PostCSS
+├── package.json             # Dépendances et scripts
+├── CLAUDE.md                # Documentation projet (ce fichier)
+├── README.md                # README principal
+├── DEMARRAGE.md             # Guide de démarrage
+├── GITHUB_SETUP.md          # Configuration GitHub
+├── SECTIONS_COMPLETES.md    # Documentation des sections complétées
+├── MISE_A_JOUR_SECTION_G.md # Plan d'implémentation Section G (Signatures)
+└── PROJET_LIVRÉ.md          # Documentation de livraison
 ```
 
 ## Sections du bail (ordre de navigation)
@@ -154,3 +166,8 @@ npm run type-check # Vérification TypeScript
 - Ce projet est le **source de référence** des composants bail TAL
 - Les modifications futures doivent être synchronisées avec le portail locataires
 - La section G (Signatures) n'est pas encore implémentée (voir `MISE_A_JOUR_SECTION_G.md`)
+- **Repo GitHub :** `IGC-Hub/bail-tal-cooperative`
+
+---
+
+*Dernière mise à jour : 2026-03-03*
