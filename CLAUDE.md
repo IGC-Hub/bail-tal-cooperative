@@ -96,7 +96,11 @@ bail-tal-coop/
 ├── GITHUB_SETUP.md          # Configuration GitHub
 ├── SECTIONS_COMPLETES.md    # Documentation des sections complétées
 ├── MISE_A_JOUR_SECTION_G.md # Plan d'implémentation Section G (Signatures)
-└── PROJET_LIVRÉ.md          # Documentation de livraison
+├── PROJET_LIVRÉ.md          # Documentation de livraison
+├── README_DOCS.md           # Documentation supplémentaire
+├── deploy-github.sh         # Script de déploiement GitHub
+├── .env.example             # Variables d'environnement (template)
+└── .gitignore               # Fichiers ignorés par Git
 ```
 
 ## Sections du bail (ordre de navigation)
@@ -170,4 +174,4 @@ npm run type-check # Vérification TypeScript
 
 ---
 
-*Dernière mise à jour : 2026-03-03*
+*Dernière mise à jour : 2026-03-04*
