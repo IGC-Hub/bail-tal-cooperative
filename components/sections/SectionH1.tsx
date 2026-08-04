@@ -15,7 +15,7 @@ interface SectionH1Props {
 }
 
 export const SectionH1: React.FC<SectionH1Props> = ({ data, onSave }) => {
-  const { register, handleSubmit, watch } = useForm({
+  const { register, handleSubmit, watch, formState: { errors } } = useForm({
     defaultValues: data,
   });
 
@@ -80,6 +80,7 @@ export const SectionH1: React.FC<SectionH1Props> = ({ data, onSave }) => {
                 label="Initiales du locataire principal"
                 required
                 maxLength={5}
+                error={errors.initiales_locataire1?.message as string}
                 {...register('initiales_locataire1', { required: 'Initiales obligatoires' })}
                 placeholder="Ex: SC"
               />

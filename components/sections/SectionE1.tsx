@@ -15,7 +15,7 @@ interface SectionE1Props {
 }
 
 export const SectionE1: React.FC<SectionE1Props> = ({ data, onSave }) => {
-  const { register, handleSubmit, watch } = useForm({
+  const { register, handleSubmit, watch, formState: { errors } } = useForm({
     defaultValues: data,
   });
 
@@ -66,6 +66,7 @@ export const SectionE1: React.FC<SectionE1Props> = ({ data, onSave }) => {
               label="Date de remise du règlement"
               type="date"
               required
+              error={errors.date_remise?.message as string}
               {...register('date_remise', { required: 'Date obligatoire' })}
             />
 
@@ -73,6 +74,7 @@ export const SectionE1: React.FC<SectionE1Props> = ({ data, onSave }) => {
               label="Initiales du locataire (confirmation de réception)"
               required
               maxLength={5}
+              error={errors.initiales_locataire?.message as string}
               {...register('initiales_locataire', { required: 'Initiales obligatoires' })}
               placeholder="Ex: SC"
             />

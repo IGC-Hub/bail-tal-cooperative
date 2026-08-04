@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronUp, User, FileText, Calendar, DollarSign, ClipboardList, AlertCircle, Users, CheckCircle, FileCheck } from 'lucide-react';
+import { ChevronDown, ChevronUp, User, FileText, Calendar, DollarSign, ClipboardList, AlertCircle, Users, FileCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SubSection {
@@ -115,18 +115,6 @@ const sections: Section[] = [
     icon: <FileCheck className="w-5 h-5" />,
     subsections: [
       { id: 'mentions-1', title: 'Mentions légales', order: 1 },
-    ],
-  },
-  {
-    id: 'finalisation',
-    code: '',
-    title: 'Finalisation du bail',
-    icon: <CheckCircle className="w-5 h-5" />,
-    subsections: [
-      { id: 'final-1', title: 'Choix de la langue du bail', order: 1 },
-      { id: 'final-2', title: 'Choix du mot de passe', order: 2 },
-      { id: 'final-3', title: 'Aperçu du bail', order: 3 },
-      { id: 'final-4', title: 'Révision', order: 4 },
     ],
   },
 ];

@@ -23,6 +23,109 @@ import { SectionH1 } from '@/components/sections/SectionH1';
 import { SectionH2 } from '@/components/sections/SectionH2';
 import { MentionsLegalesSection } from '@/components/sections/MentionsLegalesSection';
 import { useBailForm } from '@/hooks/useBailForm';
+import { BailFormData } from '@/types/bail';
+
+type SectionRenderer = (
+  data: Partial<BailFormData>,
+  update: (d: Partial<BailFormData>) => void,
+) => React.ReactNode;
+
+const SECTION_MAP: Record<string, SectionRenderer> = {
+  'intro-1': () => <IntroductionSection />,
+
+  'a-1': (data, update) => (
+    <SectionA1
+      data={data.cooperative}
+      onSave={(d) => update({ cooperative: d })}
+    />
+  ),
+  'a-2': (data, update) => (
+    <SectionA2
+      data={{
+        locataire_principal: data.locataire_principal,
+        locataire_supplementaire: data.locataire_supplementaire,
+      }}
+      onSave={(d) => update(d)}
+    />
+  ),
+
+  'b-1': (data, update) => (
+    <SectionB1 data={data.logement} onSave={(d) => update({ logement: d })} />
+  ),
+  'b-2': (data, update) => (
+    <SectionB2 data={data.logement} onSave={(d) => update({ logement: d })} />
+  ),
+  'b-3': (data, update) => (
+    <SectionB3 data={data.logement} onSave={(d) => update({ logement: d })} />
+  ),
+
+  'c-1': (data, update) => (
+    <SectionC data={data.duree} onSave={(d) => update({ duree: d })} />
+  ),
+
+  'd-1': (data, update) => (
+    <SectionD1 data={data.loyer} onSave={(d) => update({ loyer: d })} />
+  ),
+  'd-2': (data, update) => (
+    <SectionD2
+      data={data.loyer?.paiement}
+      onSave={(d) => update({ loyer: { ...data.loyer, paiement: d } })}
+    />
+  ),
+
+  'e-1': (data, update) => (
+    <SectionE1
+      data={data.services?.reglement_immeuble}
+      onSave={(d) => update({ services: { ...data.services, reglement_immeuble: d } })}
+    />
+  ),
+  'e-2': (data, update) => (
+    <SectionE2
+      data={data.services?.travaux_reparations}
+      onSave={(d) => update({ services: { ...data.services, travaux_reparations: d } })}
+    />
+  ),
+  'e-3': (data, update) => (
+    <SectionE3
+      data={data.services?.service_concierge}
+      onSave={(d) => update({ services: { ...data.services, service_concierge: d } })}
+    />
+  ),
+  'e-4': (data, update) => (
+    <SectionE4
+      data={data.services?.services_taxes}
+      onSave={(d) => update({ services: { ...data.services, services_taxes: d } })}
+    />
+  ),
+  'e-5': (data, update) => (
+    <SectionE5
+      data={data.services?.conditions}
+      onSave={(d) => update({ services: { ...data.services, conditions: d } })}
+    />
+  ),
+  'e-6': (data, update) => (
+    <SectionE6
+      data={{ autres_services: data.services?.autres_services }}
+      onSave={(d) => update({ services: { ...data.services, ...d } })}
+    />
+  ),
+
+  'f-1': (data, update) => (
+    <SectionF data={data.restrictions} onSave={(d) => update({ restrictions: d })} />
+  ),
+
+  'h-1': (data, update) => (
+    <SectionH1 data={data.solidarite} onSave={(d) => update({ solidarite: d })} />
+  ),
+  'h-2': (data, update) => (
+    <SectionH2
+      data={{ autres_signataires: data.solidarite?.autres_signataires }}
+      onSave={(d) => update({ solidarite: { ...data.solidarite, ...d } })}
+    />
+  ),
+
+  'mentions-1': () => <MentionsLegalesSection />,
+};
 
 export default function BailFormPage() {
   const {
@@ -39,182 +142,12 @@ export default function BailFormPage() {
   } = useBailForm();
 
   const renderCurrentSection = () => {
-    const { currentSection, currentSubsection } = formState;
+    const renderer = SECTION_MAP[formState.currentSubsection];
 
-    // Introduction
-    if (currentSection === 'intro') {
-      return <IntroductionSection />;
+    if (renderer) {
+      return renderer(formState.data, updateFormData);
     }
 
-    // Section A - Identification
-    if (currentSection === 'section-a') {
-      if (currentSubsection === 'a-1') {
-        return (
-          <SectionA1
-            data={formState.data.cooperative}
-            onSave={(data: any) => updateFormData({ cooperative: data })}
-          />
-        );
-      }
-      if (currentSubsection === 'a-2') {
-        return (
-          <SectionA2
-            data={{
-              locataire_principal: formState.data.locataire_principal,
-              locataire_supplementaire: formState.data.locataire_supplementaire,
-            }}
-            onSave={(data: any) => updateFormData(data)}
-          />
-        );
-      }
-    }
-
-    // Section B - Description du logement
-    if (currentSection === 'section-b') {
-      if (currentSubsection === 'b-1') {
-        return (
-          <SectionB1
-            data={formState.data.logement}
-            onSave={(data: any) => updateFormData({ logement: data })}
-          />
-        );
-      }
-      if (currentSubsection === 'b-2') {
-        return (
-          <SectionB2
-            data={formState.data.logement}
-            onSave={(data: any) => updateFormData({ logement: data })}
-          />
-        );
-      }
-      if (currentSubsection === 'b-3') {
-        return (
-          <SectionB3
-            data={formState.data.logement}
-            onSave={(data: any) => updateFormData({ logement: data })}
-          />
-        );
-      }
-    }
-
-    // Section C - Durée du bail
-    if (currentSection === 'section-c') {
-      return (
-        <SectionC
-          data={formState.data.duree}
-          onSave={(data: any) => updateFormData({ duree: data })}
-        />
-      );
-    }
-
-    // Section D - Loyer
-    if (currentSection === 'section-d') {
-      if (currentSubsection === 'd-1') {
-        return (
-          <SectionD1
-            data={formState.data.loyer}
-            onSave={(data: any) => updateFormData({ loyer: data })}
-          />
-        );
-      }
-      if (currentSubsection === 'd-2') {
-        return (
-          <SectionD2
-            data={formState.data.loyer?.paiement}
-            onSave={(data: any) => updateFormData({ loyer: { ...formState.data.loyer, paiement: data } })}
-          />
-        );
-      }
-    }
-
-    // Section E - Services et conditions
-    if (currentSection === 'section-e') {
-      if (currentSubsection === 'e-1') {
-        return (
-          <SectionE1
-            data={formState.data.services?.reglement_immeuble}
-            onSave={(data: any) => updateFormData({ services: { ...formState.data.services, reglement_immeuble: data } })}
-          />
-        );
-      }
-      if (currentSubsection === 'e-2') {
-        return (
-          <SectionE2
-            data={formState.data.services?.travaux_reparations}
-            onSave={(data: any) => updateFormData({ services: { ...formState.data.services, travaux_reparations: data } })}
-          />
-        );
-      }
-      if (currentSubsection === 'e-3') {
-        return (
-          <SectionE3
-            data={formState.data.services?.service_concierge}
-            onSave={(data: any) => updateFormData({ services: { ...formState.data.services, service_concierge: data } })}
-          />
-        );
-      }
-      if (currentSubsection === 'e-4') {
-        return (
-          <SectionE4
-            data={formState.data.services?.services_taxes}
-            onSave={(data: any) => updateFormData({ services: { ...formState.data.services, services_taxes: data } })}
-          />
-        );
-      }
-      if (currentSubsection === 'e-5') {
-        return (
-          <SectionE5
-            data={formState.data.services?.conditions}
-            onSave={(data: any) => updateFormData({ services: { ...formState.data.services, conditions: data } })}
-          />
-        );
-      }
-      if (currentSubsection === 'e-6') {
-        return (
-          <SectionE6
-            data={{ autres_services: formState.data.services?.autres_services }}
-            onSave={(data: any) => updateFormData({ services: { ...formState.data.services, ...data } })}
-          />
-        );
-      }
-    }
-
-    // Section F - Restrictions
-    if (currentSection === 'section-f') {
-      return (
-        <SectionF
-          data={formState.data.restrictions}
-          onSave={(data: any) => updateFormData({ restrictions: data })}
-        />
-      );
-    }
-
-    // Section H - Solidarité et caution
-    if (currentSection === 'section-h') {
-      if (currentSubsection === 'h-1') {
-        return (
-          <SectionH1
-            data={formState.data.solidarite}
-            onSave={(data: any) => updateFormData({ solidarite: data })}
-          />
-        );
-      }
-      if (currentSubsection === 'h-2') {
-        return (
-          <SectionH2
-            data={{ autres_signataires: formState.data.solidarite?.autres_signataires }}
-            onSave={(data: any) => updateFormData({ solidarite: { ...formState.data.solidarite, ...data } })}
-          />
-        );
-      }
-    }
-
-    // Mentions légales
-    if (currentSection === 'mentions') {
-      return <MentionsLegalesSection />;
-    }
-
-    // Section par défaut (non implémentée)
     return (
       <div className="section-card">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">
@@ -223,18 +156,12 @@ export default function BailFormPage() {
         <p className="text-gray-600">
           Cette section sera disponible prochainement.
         </p>
-        <pre className="mt-4 p-4 bg-gray-100 rounded text-sm">
-          Section: {currentSection}
-          <br />
-          Sous-section: {currentSubsection}
-        </pre>
       </div>
     );
   };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar */}
       <Sidebar
         currentSection={formState.currentSection}
         currentSubsection={formState.currentSubsection}
@@ -242,13 +169,11 @@ export default function BailFormPage() {
         completedSections={completedSections}
       />
 
-      {/* Contenu principal */}
       <div className="flex-1 flex flex-col">
-        {/* Bandeau bleu TAL */}
         <header className="bg-tal-blue text-white px-6 py-4">
           <div className="max-w-7xl mx-auto">
             <h1 className="text-2xl font-bold">
-              Bail d'un logement dans une coopérative
+              Bail d&apos;un logement dans une coopérative
             </h1>
             <p className="text-sm text-blue-100 mt-1">
               Formulaire obligatoire du Tribunal administratif du logement
@@ -256,14 +181,12 @@ export default function BailFormPage() {
           </div>
         </header>
 
-        {/* Zone de contenu */}
         <main className="flex-1 px-6 py-8">
           <div className="max-w-7xl mx-auto">
             {renderCurrentSection()}
           </div>
         </main>
 
-        {/* Barre de navigation */}
         <NavigationBar
           onPrevious={goToPrevious}
           onNext={goToNext}

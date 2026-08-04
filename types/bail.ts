@@ -37,41 +37,55 @@ export interface BailFormData {
 }
 
 export interface CooperativeInfo {
-  nom: string;
-  numero: string;
-  rue: string;
+  organisation_code?: string;
+  nom?: string;
+  numero?: string;
+  rue?: string;
   app?: string;
-  municipalite: string;
-  code_postal: string;
-  telephone: string;
+  ville?: string;
+  province?: string;
+  code_postal?: string;
+  telephone?: string;
   telephone_cell?: string;
   courriel?: string;
-  representee_par: string;
+  // Mandataire (gestionnaire)
+  mandataire_organisme?: string;
+  mandataire_numero?: string;
+  mandataire_rue?: string;
+  mandataire_ville?: string;
+  mandataire_province?: string;
+  mandataire_code_postal?: string;
+  mandataire_telephone?: string;
+  mandataire_courriel?: string;
+  // Signataire
+  signataire_prenom?: string;
+  signataire_nom?: string;
+  signataire_qualite?: string;
 }
 
 export interface LocataireInfo {
-  nom: string;
-  prenom: string;
-  numero: string;
-  rue: string;
+  nom?: string;
+  prenom?: string;
+  numero?: string;
+  rue?: string;
   app?: string;
-  municipalite: string;
-  code_postal: string;
-  telephone: string;
+  municipalite?: string;
+  code_postal?: string;
+  telephone?: string;
   telephone_cell?: string;
   courriel?: string;
   represente_par?: string;
 }
 
 export interface LogementInfo {
-  adresse: {
-    numero: string;
-    rue: string;
-    app: string;
-    municipalite: string;
-    code_postal: string;
+  adresse?: {
+    numero?: string;
+    rue?: string;
+    app?: string;
+    municipalite?: string;
+    code_postal?: string;
   };
-  nombre_pieces: number;
+  nombre_pieces?: number;
   stationnement_exterieur?: {
     nombre: number;
     emplacements: string;
@@ -84,15 +98,19 @@ export interface LogementInfo {
     nombre: number;
     emplacements: string;
   };
+  inclus_balcon?: boolean;
+  inclus_remise?: boolean;
+  acces_cour?: boolean;
+  buanderie_commune?: boolean;
   autres_accessoires?: string;
-  engagement_avertisseurs_fumee: boolean;
+  engagement_avertisseurs_fumee?: boolean;
   engagement_date?: string;
   engagement_initiales_coop?: string;
   engagement_initiales_locataire?: string;
 }
 
 export interface DureeBail {
-  type: 'fixe' | 'indeterminee';
+  type?: 'fixe' | 'indeterminee';
   // Pour bail fixe
   duree_nombre?: number;
   duree_unite?: 'semaines' | 'mois' | 'annees';
@@ -103,68 +121,67 @@ export interface DureeBail {
 }
 
 export interface LoyerInfo {
-  loyer_base: number;
+  loyer_base?: number;
   cout_services?: number;
-  loyer_total: number;
-  frequence: 'mois' | 'semaine';
-  programme_subvention: boolean;
+  loyer_total?: number;
+  frequence?: 'mois' | 'semaine';
+  programme_subvention?: boolean;
   details_subvention?: string;
-  
-  paiement: {
-    premier_terme_date: string;
-    jour_paiement: number;
-    periode: 'mois' | 'semaine';
-    mode: 'comptant' | 'cheque' | 'virement' | 'autre';
-    mode_autre?: string;
-    cheques_postdates: boolean;
-    lieu: string;
-  };
+  paiement?: PaiementInfo;
+}
+
+export interface PaiementInfo {
+  premier_terme_date?: string;
+  jour_paiement?: number;
+  periode?: 'mois' | 'semaine';
+  mode?: 'comptant' | 'cheque' | 'virement' | 'autre';
+  mode_autre?: string;
+  cheques_postdates?: boolean;
+  lieu?: string;
 }
 
 export interface ServicesConditions {
-  reglement_immeuble: {
-    remis: boolean;
+  reglement_immeuble?: {
+    reglement_remis?: boolean;
     date_remise?: string;
     initiales_locataire?: string;
   };
-  
-  travaux_reparations: {
-    avant_delivrance?: string;
-    en_cours_bail?: string;
+
+  travaux_reparations?: {
+    travaux_avant_delivrance?: string;
+    travaux_en_cours_bail?: string;
   };
-  
+
   service_concierge?: {
-    actif: boolean;
+    service_concierge_actif?: boolean;
     nom?: string;
     telephone?: string;
     courriel?: string;
     telephone_cell?: string;
   };
-  
-  services_taxes: {
-    chauffage: 'cooperative' | 'locataire';
+
+  services_taxes?: {
+    chauffage?: 'cooperative' | 'locataire';
     electricite_source?: 'gaz' | 'electricite' | 'mazout';
-    electricite_autre: 'cooperative' | 'locataire';
-    chauffe_eau_location: 'cooperative' | 'locataire';
-    eau_chaude_utilisation: 'cooperative' | 'locataire';
-    taxe_eau: 'cooperative' | 'locataire';
-    deneigement: {
-      stationnement: 'cooperative' | 'locataire';
-      balcon: 'cooperative' | 'locataire';
-      entree: 'cooperative' | 'locataire';
-      escalier: 'cooperative' | 'locataire';
-    };
+    electricite_autre?: 'cooperative' | 'locataire';
+    chauffe_eau_location?: 'cooperative' | 'locataire';
+    eau_chaude_utilisation?: 'cooperative' | 'locataire';
+    taxe_eau?: 'cooperative' | 'locataire';
+    deneigement_stationnement?: 'cooperative' | 'locataire';
+    deneigement_balcon?: 'cooperative' | 'locataire';
+    deneigement_entree?: 'cooperative' | 'locataire';
+    deneigement_escalier?: 'cooperative' | 'locataire';
   };
-  
-  conditions: {
-    sans_fumee: boolean;
+
+  conditions?: {
+    sans_fumee?: boolean;
     sans_fumee_details?: string;
-    acces_terrain: boolean;
+    acces_terrain?: boolean;
     acces_terrain_details?: string;
-    animaux_permis: boolean;
+    animaux_permis?: boolean;
     animaux_details?: string;
   };
-  
+
   autres_services?: string;
 }
 
@@ -178,23 +195,26 @@ export interface RestrictionsInfo {
 }
 
 export interface SolidariteInfo {
-  engagement_solidaire: boolean;
+  engagement_solidaire?: boolean;
   initiales_locataire1?: string;
   initiales_locataire2?: string;
   autres_signataires?: AutreSignataire[];
 }
 
 export interface AutreSignataire {
+  prenom?: string;
   nom: string;
   adresse: string;
-  qualite: string; // 'locataire', 'caution', etc.
+  telephone?: string;
+  courriel?: string;
+  qualite: 'caution' | 'garant' | 'autre';
+  qualite_autre?: string;
   signature_date?: string;
 }
 
 export interface FinalisationInfo {
-  langue_bail: 'francais' | 'anglais';
-  mot_de_passe?: string;
-  apercu_genere: boolean;
+  langue_bail?: 'francais' | 'anglais';
+  apercu_genere?: boolean;
   date_signature_coop?: string;
   date_signature_locataire1?: string;
   date_signature_locataire2?: string;

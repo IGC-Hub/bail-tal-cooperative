@@ -28,8 +28,8 @@ export const SectionD1: React.FC<SectionD1Props> = ({ data, onSave }) => {
 
   // Calcul automatique du loyer total
   React.useEffect(() => {
-    const base = parseFloat(loyerBase) || 0;
-    const services = parseFloat(coutServices) || 0;
+    const base = Number(loyerBase) || 0;
+    const services = Number(coutServices) || 0;
     setValue('loyer_total', base + services);
   }, [loyerBase, coutServices, setValue]);
 

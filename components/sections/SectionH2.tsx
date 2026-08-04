@@ -6,26 +6,17 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { AlertBox } from '@/components/ui/AlertBox';
 import { Plus, X } from 'lucide-react';
-
-interface AutreSignataire {
-  nom: string;
-  prenom: string;
-  adresse: string;
-  telephone: string;
-  courriel?: string;
-  qualite: 'caution' | 'garant' | 'autre';
-  qualite_autre?: string;
-}
+import { AutreSignataire } from '@/types/bail';
 
 interface SectionH2Props {
   data?: {
     autres_signataires?: AutreSignataire[];
   };
-  onSave: (data: any) => void;
+  onSave: (data: { autres_signataires: AutreSignataire[] }) => void;
 }
 
 export const SectionH2: React.FC<SectionH2Props> = ({ data, onSave }) => {
-  const { register, control, handleSubmit, watch } = useForm({
+  const { register, control, handleSubmit, watch, formState: { errors } } = useForm({
     defaultValues: {
       autres_signataires: data?.autres_signataires || [],
     },
@@ -106,11 +97,13 @@ export const SectionH2: React.FC<SectionH2Props> = ({ data, onSave }) => {
                       <Input
                         label="Prénom"
                         required
+                        error={errors.autres_signataires?.[index]?.prenom ? 'Prénom obligatoire' : undefined}
                         {...register(`autres_signataires.${index}.prenom`, { required: true })}
                       />
                       <Input
                         label="Nom"
                         required
+                        error={errors.autres_signataires?.[index]?.nom ? 'Nom obligatoire' : undefined}
                         {...register(`autres_signataires.${index}.nom`, { required: true })}
                       />
                     </div>
@@ -118,6 +111,7 @@ export const SectionH2: React.FC<SectionH2Props> = ({ data, onSave }) => {
                     <Input
                       label="Adresse complète"
                       required
+                      error={errors.autres_signataires?.[index]?.adresse ? 'Adresse obligatoire' : undefined}
                       {...register(`autres_signataires.${index}.adresse`, { required: true })}
                       placeholder="1234 Rue Example, Ville, QC, H1H 1H1"
                     />
@@ -127,6 +121,7 @@ export const SectionH2: React.FC<SectionH2Props> = ({ data, onSave }) => {
                         label="Téléphone"
                         type="tel"
                         required
+                        error={errors.autres_signataires?.[index]?.telephone ? 'Téléphone obligatoire' : undefined}
                         {...register(`autres_signataires.${index}.telephone`, { required: true })}
                         placeholder="514 XXX-XXXX"
                       />

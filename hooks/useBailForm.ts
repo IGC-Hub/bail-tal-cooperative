@@ -25,10 +25,6 @@ const NAVIGATION_ORDER: { sectionId: string; subsectionId: string }[] = [
   { sectionId: 'section-h', subsectionId: 'h-1' },
   { sectionId: 'section-h', subsectionId: 'h-2' },
   { sectionId: 'mentions', subsectionId: 'mentions-1' },
-  { sectionId: 'finalisation', subsectionId: 'final-1' },
-  { sectionId: 'finalisation', subsectionId: 'final-2' },
-  { sectionId: 'finalisation', subsectionId: 'final-3' },
-  { sectionId: 'finalisation', subsectionId: 'final-4' },
 ];
 
 export function useBailForm(leaseId?: string) {
@@ -55,20 +51,30 @@ export function useBailForm(leaseId?: string) {
       console.warn('Supabase client not available');
       return;
     }
-    
+
     try {
       const { data, error } = await supabase
         .from('leases')
-        .select('*')
+        .select('bail_tal_data, bail_tal_statut')
         .eq('id', id)
         .single();
 
       if (error) throw error;
 
-      if (data) {
+      if (data?.bail_tal_data) {
+        const bailData = data.bail_tal_data as Partial<BailFormData>;
         setFormState(prev => ({
           ...prev,
-          data: data as any, // TODO: mapper correctement
+          data: {
+            ...bailData,
+            metadata: {
+              ...bailData.metadata,
+              lease_id: id,
+              status: bailData.metadata?.status ?? 'draft',
+              created_at: bailData.metadata?.created_at ?? new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          },
         }));
       }
     } catch (error) {
@@ -88,14 +94,32 @@ export function useBailForm(leaseId?: string) {
   }, []);
 
   const saveFormData = useCallback(async () => {
+    const currentLeaseId = formState.data.metadata?.lease_id ?? leaseId;
+    if (!supabase || !currentLeaseId) {
+      console.error('Sauvegarde impossible: client Supabase ou leaseId manquant');
+      return;
+    }
+
     setIsSaving(true);
     try {
-      // TODO: Sauvegarder dans Supabase
-      console.log('Sauvegarde des données:', formState.data);
-      
-      // Simuler une sauvegarde
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      const dataToSave = {
+        ...formState.data,
+        metadata: {
+          ...formState.data.metadata,
+          updated_at: new Date().toISOString(),
+        },
+      };
+
+      const { error } = await supabase
+        .from('leases')
+        .update({
+          bail_tal_data: dataToSave,
+          bail_tal_statut: 'en_cours',
+        })
+        .eq('id', currentLeaseId);
+
+      if (error) throw error;
+
       setFormState(prev => ({
         ...prev,
         isDirty: false,
@@ -106,7 +130,7 @@ export function useBailForm(leaseId?: string) {
     } finally {
       setIsSaving(false);
     }
-  }, [formState.data]);
+  }, [formState.data, leaseId]);
 
   const navigateToSection = useCallback((sectionId: string, subsectionId: string) => {
     setFormState(prev => ({

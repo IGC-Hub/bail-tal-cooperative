@@ -16,7 +16,7 @@ interface SectionB3Props {
 }
 
 export const SectionB3: React.FC<SectionB3Props> = ({ data, onSave }) => {
-  const { register, handleSubmit, watch } = useForm({
+  const { register, handleSubmit, watch, formState: { errors } } = useForm({
     defaultValues: data,
   });
 
@@ -60,6 +60,7 @@ export const SectionB3: React.FC<SectionB3Props> = ({ data, onSave }) => {
               label="Date de l'engagement"
               type="date"
               required
+              error={errors.engagement_date?.message as string}
               {...register('engagement_date', { required: 'Date obligatoire' })}
             />
 
@@ -68,6 +69,7 @@ export const SectionB3: React.FC<SectionB3Props> = ({ data, onSave }) => {
                 label="Initiales du mandataire de la coopérative"
                 required
                 maxLength={5}
+                error={errors.engagement_initiales_coop?.message as string}
                 {...register('engagement_initiales_coop', { required: 'Obligatoire' })}
                 placeholder="Ex: ZO"
               />
@@ -75,6 +77,7 @@ export const SectionB3: React.FC<SectionB3Props> = ({ data, onSave }) => {
                 label="Initiales du locataire"
                 required
                 maxLength={5}
+                error={errors.engagement_initiales_locataire?.message as string}
                 {...register('engagement_initiales_locataire', { required: 'Obligatoire' })}
                 placeholder="Ex: SC"
               />

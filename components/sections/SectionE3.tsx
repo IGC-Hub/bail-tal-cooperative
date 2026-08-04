@@ -16,7 +16,7 @@ interface SectionE3Props {
 }
 
 export const SectionE3: React.FC<SectionE3Props> = ({ data, onSave }) => {
-  const { register, handleSubmit, watch } = useForm({
+  const { register, handleSubmit, watch, formState: { errors } } = useForm({
     defaultValues: data,
   });
 
@@ -57,6 +57,7 @@ export const SectionE3: React.FC<SectionE3Props> = ({ data, onSave }) => {
             <Input
               label="Nom du concierge"
               required
+              error={errors.nom?.message as string}
               {...register('nom', { required: 'Nom obligatoire' })}
               placeholder="Jean Tremblay"
             />
@@ -66,6 +67,7 @@ export const SectionE3: React.FC<SectionE3Props> = ({ data, onSave }) => {
                 label="Téléphone"
                 type="tel"
                 required
+                error={errors.telephone?.message as string}
                 {...register('telephone', { required: 'Téléphone obligatoire' })}
                 placeholder="514 XXX-XXXX"
               />

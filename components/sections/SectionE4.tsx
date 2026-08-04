@@ -4,28 +4,21 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { AlertBox } from '@/components/ui/AlertBox';
 
+import { ServicesConditions } from '@/types/bail';
+
+type ServicesTaxesData = NonNullable<ServicesConditions['services_taxes']>;
+
 interface SectionE4Props {
-  data?: {
-    chauffage?: 'cooperative' | 'locataire';
-    electricite_source?: 'gaz' | 'electricite' | 'mazout';
-    electricite_autre?: 'cooperative' | 'locataire';
-    chauffe_eau_location?: 'cooperative' | 'locataire';
-    eau_chaude_utilisation?: 'cooperative' | 'locataire';
-    taxe_eau?: 'cooperative' | 'locataire';
-    deneigement_stationnement?: 'cooperative' | 'locataire';
-    deneigement_balcon?: 'cooperative' | 'locataire';
-    deneigement_entree?: 'cooperative' | 'locataire';
-    deneigement_escalier?: 'cooperative' | 'locataire';
-  };
-  onSave: (data: any) => void;
+  data?: Partial<ServicesTaxesData>;
+  onSave: (data: Partial<ServicesTaxesData>) => void;
 }
 
 export const SectionE4: React.FC<SectionE4Props> = ({ data, onSave }) => {
-  const { register, handleSubmit } = useForm({
+  const { register, handleSubmit } = useForm<ServicesTaxesData>({
     defaultValues: data,
   });
 
-  const RadioGroup = ({ name, label }: { name: string; label: string }) => (
+  const RadioGroup = ({ name, label }: { name: keyof ServicesTaxesData; label: string }) => (
     <div className="flex items-center justify-between py-3 border-b border-gray-200">
       <label className="text-sm font-medium text-gray-700">{label}</label>
       <div className="flex gap-6">
@@ -33,7 +26,7 @@ export const SectionE4: React.FC<SectionE4Props> = ({ data, onSave }) => {
           <input
             type="radio"
             value="cooperative"
-            {...register(name as any)}
+            {...register(name)}
             className="w-4 h-4 text-tal-blue focus:ring-tal-blue"
           />
           <span className="text-sm">Coopérative</span>
@@ -42,7 +35,7 @@ export const SectionE4: React.FC<SectionE4Props> = ({ data, onSave }) => {
           <input
             type="radio"
             value="locataire"
-            {...register(name as any)}
+            {...register(name)}
             className="w-4 h-4 text-tal-blue focus:ring-tal-blue"
           />
           <span className="text-sm">Locataire</span>

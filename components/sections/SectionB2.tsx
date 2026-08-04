@@ -51,6 +51,7 @@ export const SectionB2: React.FC<SectionB2Props> = ({ data, onSave }) => {
             <label className="flex items-center space-x-3">
               <input
                 type="checkbox"
+                {...register('acces_cour')}
                 className="w-4 h-4 text-tal-blue border-gray-300 rounded focus:ring-tal-blue"
               />
               <span className="text-gray-700">Accès cour arrière</span>
@@ -59,6 +60,7 @@ export const SectionB2: React.FC<SectionB2Props> = ({ data, onSave }) => {
             <label className="flex items-center space-x-3">
               <input
                 type="checkbox"
+                {...register('buanderie_commune')}
                 className="w-4 h-4 text-tal-blue border-gray-300 rounded focus:ring-tal-blue"
               />
               <span className="text-gray-700">Buanderie commune</span>
