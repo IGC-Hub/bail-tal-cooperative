@@ -23,7 +23,10 @@ export interface BailFormData {
   
   // Section H - Solidarité et caution
   solidarite: SolidariteInfo;
-  
+
+  // Section G - Signatures
+  signatures: SignaturesInfo;
+
   // Finalisation
   finalisation: FinalisationInfo;
   
@@ -212,12 +215,30 @@ export interface AutreSignataire {
   signature_date?: string;
 }
 
+export interface SignaturesInfo {
+  // Signature du locateur (coopérative)
+  signature_coop_nom?: string;
+  signature_coop_qualite?: string;
+  signature_coop_date?: string;
+  signature_coop_lieu?: string;
+  signature_coop_accepte?: boolean;
+  // Signature du locataire principal
+  signature_locataire1_nom?: string;
+  signature_locataire1_date?: string;
+  signature_locataire1_lieu?: string;
+  signature_locataire1_accepte?: boolean;
+  // Signature du locataire supplémentaire
+  signature_locataire2_nom?: string;
+  signature_locataire2_date?: string;
+  signature_locataire2_lieu?: string;
+  signature_locataire2_accepte?: boolean;
+}
+
 export interface FinalisationInfo {
   langue_bail?: 'francais' | 'anglais';
   apercu_genere?: boolean;
-  date_signature_coop?: string;
-  date_signature_locataire1?: string;
-  date_signature_locataire2?: string;
+  pdf_genere?: boolean;
+  pdf_date_generation?: string;
 }
 
 // Types pour la navigation

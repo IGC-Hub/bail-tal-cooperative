@@ -22,6 +22,9 @@ import { SectionF } from '@/components/sections/SectionF';
 import { SectionH1 } from '@/components/sections/SectionH1';
 import { SectionH2 } from '@/components/sections/SectionH2';
 import { MentionsLegalesSection } from '@/components/sections/MentionsLegalesSection';
+import { SectionRecapitulatif } from '@/components/sections/SectionRecapitulatif';
+import { SectionG } from '@/components/sections/SectionG';
+import { SectionPDF } from '@/components/sections/SectionPDF';
 import { useBailForm } from '@/hooks/useBailForm';
 import { BailFormData } from '@/types/bail';
 
@@ -125,6 +128,32 @@ const SECTION_MAP: Record<string, SectionRenderer> = {
   ),
 
   'mentions-1': () => <MentionsLegalesSection />,
+
+  'recap-1': (data) => <SectionRecapitulatif data={data} />,
+
+  'g-1': (data, update) => {
+    const coopSig = [data.cooperative?.signataire_prenom, data.cooperative?.signataire_nom].filter(Boolean).join(' ');
+    const loc1 = [data.locataire_principal?.prenom, data.locataire_principal?.nom].filter(Boolean).join(' ');
+    const loc2 = data.locataire_supplementaire?.nom
+      ? [data.locataire_supplementaire.prenom, data.locataire_supplementaire.nom].filter(Boolean).join(' ')
+      : undefined;
+    return (
+      <SectionG
+        data={data.signatures}
+        cooperativeSignataire={coopSig}
+        locatairePrincipal={loc1}
+        locataireSupplementaire={loc2}
+        onSave={(d) => update({ signatures: { ...data.signatures, ...d } })}
+      />
+    );
+  },
+
+  'pdf-1': (data, update) => (
+    <SectionPDF
+      data={data}
+      onSave={(d) => update({ finalisation: { ...data.finalisation, ...d } })}
+    />
+  ),
 };
 
 export default function BailFormPage() {

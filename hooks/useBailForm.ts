@@ -25,6 +25,9 @@ const NAVIGATION_ORDER: { sectionId: string; subsectionId: string }[] = [
   { sectionId: 'section-h', subsectionId: 'h-1' },
   { sectionId: 'section-h', subsectionId: 'h-2' },
   { sectionId: 'mentions', subsectionId: 'mentions-1' },
+  { sectionId: 'finalisation', subsectionId: 'recap-1' },
+  { sectionId: 'finalisation', subsectionId: 'g-1' },
+  { sectionId: 'finalisation', subsectionId: 'pdf-1' },
 ];
 
 export function useBailForm(leaseId?: string) {
