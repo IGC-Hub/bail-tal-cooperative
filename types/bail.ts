@@ -239,6 +239,7 @@ export interface FinalisationInfo {
   apercu_genere?: boolean;
   pdf_genere?: boolean;
   pdf_date_generation?: string;
+  pdf_url?: string;
 }
 
 // Types pour la navigation

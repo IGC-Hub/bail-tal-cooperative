@@ -247,6 +247,7 @@ export const bailFormDataSchema = z.object({
     apercu_genere: z.boolean().optional(),
     pdf_genere: z.boolean().optional(),
     pdf_date_generation: z.string().optional(),
+    pdf_url: z.string().optional(),
   }).optional(),
   metadata: z.object({
     status: z.enum(['draft', 'pending_signatures', 'signed', 'completed']).optional(),

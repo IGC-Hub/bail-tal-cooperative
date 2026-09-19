@@ -5,7 +5,7 @@ import { AlertBox } from '@/components/ui/AlertBox';
 import { Button } from '@/components/ui/Button';
 import { BailFormData, FinalisationInfo } from '@/types/bail';
 import { supabase } from '@/lib/supabase';
-import { FileText, Download, CheckCircle, AlertTriangle } from 'lucide-react';
+import { FileText, Download, CheckCircle, AlertTriangle, ExternalLink } from 'lucide-react';
 
 interface SectionPDFProps {
   data: Partial<BailFormData>;
@@ -19,6 +19,7 @@ export const SectionPDF: React.FC<SectionPDFProps> = ({ data, onSave }) => {
     data.finalisation?.pdf_genere ? 'success' : 'idle'
   );
   const [errorMessage, setErrorMessage] = useState('');
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   const signaturesCompletes =
     data.signatures?.signature_coop_accepte &&
@@ -27,44 +28,62 @@ export const SectionPDF: React.FC<SectionPDFProps> = ({ data, onSave }) => {
   const leaseId = data.metadata?.lease_id;
 
   const handleGenerate = useCallback(async () => {
-    if (!signaturesCompletes) return;
+    if (!signaturesCompletes || !supabase || !leaseId) return;
 
     setStatus('generating');
     setErrorMessage('');
 
     try {
-      // Marquer le bail comme complété dans Supabase
-      if (supabase && leaseId) {
-        const { error } = await supabase
-          .from('leases')
-          .update({
-            bail_tal_data: data,
-            bail_tal_statut: 'complete',
-            bail_tal_genere: true,
-            bail_tal_date_generation: new Date().toISOString(),
-          })
-          .eq('id', leaseId);
+      // Sauvegarder les données actuelles avant génération
+      await supabase
+        .from('leases')
+        .update({ bail_tal_data: data })
+        .eq('id', leaseId);
 
-        if (error) throw error;
+      // Obtenir le token d'auth pour l'Edge Function
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      if (!accessToken) {
+        throw new Error('Session expirée. Veuillez vous reconnecter.');
       }
 
-      // Mettre à jour l'état local
+      // Appeler l'Edge Function
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const response = await fetch(`${supabaseUrl}/functions/v1/generate-bail-pdf`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ lease_id: leaseId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Erreur ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      setPdfUrl(result.pdf_url);
       onSave({
         pdf_genere: true,
-        pdf_date_generation: new Date().toISOString(),
+        pdf_date_generation: result.generated_at,
+        pdf_url: result.pdf_url,
       });
 
       setStatus('success');
     } catch (err) {
       console.error('Erreur lors de la génération:', err);
-      setErrorMessage('Une erreur est survenue lors de la génération. Veuillez réessayer.');
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : 'Une erreur est survenue lors de la génération. Veuillez réessayer.'
+      );
       setStatus('error');
     }
   }, [data, leaseId, onSave, signaturesCompletes]);
-
-  const handlePrint = useCallback(() => {
-    window.print();
-  }, []);
 
   return (
     <div className="section-card">
@@ -91,7 +110,7 @@ export const SectionPDF: React.FC<SectionPDFProps> = ({ data, onSave }) => {
         <AlertBox variant="info">
           <p>
             Toutes les signatures ont été recueillies. Vous pouvez maintenant
-            générer le bail officiel.
+            générer le bail officiel au format PDF.
           </p>
         </AlertBox>
       )}
@@ -148,8 +167,9 @@ export const SectionPDF: React.FC<SectionPDFProps> = ({ data, onSave }) => {
                   Générer le bail officiel
                 </h4>
                 <p className="text-sm text-gray-600 max-w-md mx-auto">
-                  Cette action finalisera le bail et le marquera comme complété.
-                  Les données ne pourront plus être modifiées après la génération.
+                  Cette action finalisera le bail, générera un PDF conforme
+                  et le stockera de façon permanente. Les données ne pourront
+                  plus être modifiées après la génération.
                 </p>
                 <Button
                   type="button"
@@ -158,7 +178,7 @@ export const SectionPDF: React.FC<SectionPDFProps> = ({ data, onSave }) => {
                   disabled={!signaturesCompletes}
                 >
                   <FileText className="w-4 h-4 mr-2" />
-                  Générer le bail
+                  Générer le bail PDF
                 </Button>
               </>
             )}
@@ -170,7 +190,8 @@ export const SectionPDF: React.FC<SectionPDFProps> = ({ data, onSave }) => {
                   Génération en cours...
                 </h4>
                 <p className="text-sm text-gray-600">
-                  Veuillez patienter pendant la génération du bail.
+                  Le bail est en cours de génération au format PDF.
+                  Veuillez patienter.
                 </p>
               </>
             )}
@@ -182,16 +203,34 @@ export const SectionPDF: React.FC<SectionPDFProps> = ({ data, onSave }) => {
                   Bail généré avec succès
                 </h4>
                 <p className="text-sm text-gray-600 max-w-md mx-auto">
-                  Le bail a été finalisé et marqué comme complété.
+                  Le bail a été finalisé et le PDF est disponible.
                   {data.finalisation?.pdf_date_generation && (
                     <> Généré le {new Date(data.finalisation.pdf_date_generation).toLocaleDateString('fr-CA')}.</>
                   )}
                 </p>
                 <div className="flex gap-4 justify-center pt-2">
-                  <Button type="button" variant="primary" onClick={handlePrint}>
-                    <Download className="w-4 h-4 mr-2" />
-                    Imprimer / Sauvegarder en PDF
-                  </Button>
+                  {(pdfUrl || data.finalisation?.pdf_url) && (
+                    <a
+                      href={pdfUrl || data.finalisation?.pdf_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 bg-tal-blue text-white rounded-md hover:bg-tal-blue-dark transition"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Télécharger le PDF
+                    </a>
+                  )}
+                  {(pdfUrl || data.finalisation?.pdf_url) && (
+                    <a
+                      href={pdfUrl || data.finalisation?.pdf_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition"
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Ouvrir dans un nouvel onglet
+                    </a>
+                  )}
                 </div>
               </>
             )}
