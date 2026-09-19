@@ -8,12 +8,39 @@ Formulaire de bail TAL (Tribunal administratif du logement) adapté aux coopéra
 
 ## Stack technique
 
-- **Next.js 14** + **TypeScript 5.4** + **React 18**
+- **Next.js 14.1.0** + **TypeScript 5.4** (strict) + **React 18**
 - **Tailwind CSS 3** — couleurs custom `tal-blue` (#003D5C) et `tal-yellow` (#FFF4D1)
-- **react-hook-form** + **@hookform/resolvers** + **zod 4** — formulaires (19 sous-sections)
-- **Supabase** (`@supabase/supabase-js` 2.112+) — Backend, schéma `core`
+- **react-hook-form** + **@hookform/resolvers** + **zod 4** — formulaires (22 sous-sections)
+- **Supabase** (`@supabase/supabase-js` 2.112+) — Backend, schéma `core`, auth activé
 - **Lucide React** 1.28+ — icônes
 - **class-variance-authority** + **clsx** + **tailwind-merge** — utilitaires CSS
+- **Vitest** + **@testing-library/react** — tests (108 tests)
+
+## Sécurité
+
+### Authentification
+
+- Le client Supabase (`lib/supabase.ts`) est configuré avec `autoRefreshToken` et `persistSession`
+- `getAuthenticatedUser()` vérifie l'identité avant toute opération d'écriture
+- `hooks/useAuth.ts` expose l'état d'authentification (user, session, loading)
+- `hooks/useBailForm.ts` bloque la sauvegarde si l'utilisateur n'est pas authentifié
+
+### RLS (Row Level Security)
+
+- Migration SQL dans `supabase/migrations/20260919_add_rls_policies.sql`
+- Politiques RLS sur 7 tables : `leases`, `organizations`, `units`, `buildings`, `tenants`, `lease_tenants`, `bail_generation_logs`
+- Filtrage par organisation via `core.user_organizations`
+- **IMPORTANT :** La migration doit être appliquée manuellement via le dashboard Supabase ou `supabase db push`
+
+### Headers HTTP
+
+- Configurés dans `next.config.js` : X-Frame-Options (DENY), X-Content-Type-Options (nosniff), HSTS, Referrer-Policy, Permissions-Policy
+
+### Validation
+
+- Schémas Zod pour chaque section dans `lib/schemas.ts`
+- `zodResolver` dans chaque `useForm()` avec `mode: 'onBlur'`
+- Validation maître `bailFormDataSchema.safeParse()` dans `saveFormData()` avant envoi à Supabase
 
 ## Supabase
 
@@ -27,7 +54,7 @@ Formulaire de bail TAL (Tribunal administratif du logement) adapté aux coopéra
   - `bail_tal_data` (JSONB) — données complètes du formulaire (sauvegarde via `useBailForm.saveFormData`)
   - `bail_tal_statut` (varchar) — `non_genere`, `en_cours`, `complete`
   - `bail_tal_genere` (boolean), `bail_tal_date_generation`, `bail_tal_lien_pdf`
-- `core.organizations` — Organisations (type: `cooperative` | `obnl` | `private` | `seniors` | `syndic`). Chargées dynamiquement dans SectionA1 pour le sélecteur de coopérative. Le gestionnaire/signataire est stocké dans le champ `settings` (JSONB) de chaque organisation.
+- `core.organizations` — Organisations (type: `cooperative` | `obnl` | `private` | `seniors` | `syndic`). Chargées dynamiquement dans SectionA1 (`.limit(100)`) pour le sélecteur de coopérative. Le gestionnaire/signataire est stocké dans le champ `settings` (JSONB).
 - `core.units` — Logements (status: `occupied` | `vacant`)
 - `core.buildings` — Immeubles (concierge, animaux, fumée, règlement)
 - `core.tenants` — Locataires
@@ -48,21 +75,45 @@ Formulaire de bail TAL (Tribunal administratif du logement) adapté aux coopéra
 
 ### Rendu des sections (`app/page.tsx`)
 
-Le rendu utilise un **dictionnaire `SECTION_MAP`** indexé par `subsectionId` (ex: `'a-1'`, `'e-4'`). Chaque entrée est une fonction `(data, updateFormData) => JSX`. Pour ajouter une section :
+Le rendu utilise un **dictionnaire `SECTION_MAP`** (mémorisé via `useMemo`) indexé par `subsectionId`. Les 22 sections sont chargées via **`next/dynamic`** (imports dynamiques) pour optimiser le bundle — seule la section visible est chargée.
 
 ```ts
-// Dans SECTION_MAP
+// Dans buildSectionMap()
 'g-1': (data, update) => (
-  <SectionG1 data={data.signatures} onSave={(d) => update({ signatures: d })} />
+  <SectionG data={data.signatures} onSave={(d) => update({ signatures: d })} />
 ),
+```
+
+### Flux de données (auto-sync)
+
+Les sections utilisent le hook **`useAutoSync`** (`hooks/useAutoSync.ts`) qui observe les changements via `watch()` de react-hook-form et appelle `onSave` avec un debounce de 300ms. Les données remontent automatiquement vers l'état parent sans bouton submit.
+
+```
+Section (useForm + useAutoSync) → onSave → updateFormData → formState.data → saveFormData → Supabase
 ```
 
 ### Persistance (`hooks/useBailForm.ts`)
 
 - **Chargement :** `loadFormData(leaseId)` → `SELECT bail_tal_data, bail_tal_statut FROM core.leases WHERE id = ?`
-- **Sauvegarde :** `saveFormData()` → `UPDATE core.leases SET bail_tal_data = ?, bail_tal_statut = 'en_cours' WHERE id = ?`
-- Les données sont stockées dans `bail_tal_data` (JSONB) sous la structure `BailFormData` définie dans `types/bail.ts`
-- La navigation couvre 19 étapes (intro → mentions légales), sans section de finalisation pour le moment
+- **Sauvegarde :** `saveFormData()` → vérification auth → validation Zod → `UPDATE core.leases SET bail_tal_data = ?, bail_tal_statut = 'en_cours' WHERE id = ?`
+- **Complétion auto :** `updateFormData` marque automatiquement la sous-section courante comme complétée dans la Sidebar
+- La navigation couvre 22 étapes (intro → PDF)
+
+### Validation (`lib/schemas.ts`)
+
+18 schémas Zod + 1 schéma maître (`bailFormDataSchema`). Chaque section utilise `zodResolver(schema)` avec `mode: 'onBlur'`.
+
+| Schéma | Section(s) |
+|--------|-----------|
+| `cooperativeSchema` | A.1 |
+| `locataireFormSchema` | A.2 |
+| `logementSchema` | B.1, B.2, B.3 |
+| `dureeSchema` | C |
+| `loyerSchema` / `paiementSchema` | D.1, D.2 |
+| `reglementSchema` / `travauxSchema` / `conciergeSchema` / `servicesTaxesSchema` / `conditionsSchema` / `autresServicesSchema` | E.1–E.6 |
+| `restrictionsSchema` | F |
+| `solidariteSchema` / `autresSignatairesFormSchema` | H.1, H.2 |
+| `signaturesSchema` | G |
 
 ### Types (`types/bail.ts`)
 
@@ -75,9 +126,11 @@ Tous les champs des interfaces sont **optionnels** car le formulaire est rempli 
 | `LogementInfo` | SectionB1, B2, B3 (inclut accessoires et avertisseurs) |
 | `DureeBail` | SectionC |
 | `LoyerInfo` + `PaiementInfo` | SectionD1, D2 |
-| `ServicesConditions` | SectionE1-E6 (sous-objets : reglement_immeuble, travaux_reparations, service_concierge, services_taxes, conditions) |
+| `ServicesConditions` | SectionE1-E6 |
 | `RestrictionsInfo` | SectionF |
 | `SolidariteInfo` + `AutreSignataire` | SectionH1, H2 |
+| `SignaturesInfo` | SectionG |
+| `FinalisationInfo` | SectionPDF |
 
 ### Accessibilité (`components/ui/Input.tsx`)
 
@@ -87,26 +140,29 @@ Le composant `Input` génère automatiquement un `id` via `useId()` et lie le `<
 
 ```
 bail-tal-coop/
+├── .github/
+│   └── workflows/
+│       └── ci.yml              # Pipeline CI (type-check, lint, test, build) Node 18+20
 ├── app/
-│   ├── globals.css          # Styles globaux + classes .input-tal, .label-tal, .section-card
-│   ├── layout.tsx           # Layout Next.js (lang="fr", police Inter)
-│   └── page.tsx             # Page principale — SECTION_MAP + Sidebar + NavigationBar
+│   ├── globals.css             # Styles globaux + classes .input-tal, .label-tal, .section-card
+│   ├── layout.tsx              # Layout Next.js (lang="fr", police Inter via next/font)
+│   └── page.tsx                # Page principale — SECTION_MAP (dynamic imports) + Sidebar
 ├── components/
-│   ├── Sidebar.tsx          # Navigation latérale (9 sections, 19 sous-sections)
-│   ├── NavigationBar.tsx    # Barre Précédent/Enregistrer/Suivant
+│   ├── Sidebar.tsx             # Navigation latérale (9 sections, 22 sous-sections)
+│   ├── NavigationBar.tsx       # Barre Précédent/Enregistrer/Suivant
 │   ├── ui/
-│   │   ├── Input.tsx        # Input accessible (useId, htmlFor, aria-invalid, forwardRef)
-│   │   ├── AlertBox.tsx     # Alertes warning/info
-│   │   └── Button.tsx       # Bouton avec variantes (CVA)
+│   │   ├── Input.tsx           # Input accessible (useId, htmlFor, aria-invalid, forwardRef)
+│   │   ├── AlertBox.tsx        # Alertes warning/info
+│   │   └── Button.tsx          # Bouton avec variantes (CVA)
 │   └── sections/
 │       ├── IntroductionSection.tsx    # Introduction (info, pas de formulaire)
-│       ├── SectionA1.tsx              # A.1 Identification coopérative (données depuis Supabase)
-│       ├── SectionA2.tsx              # A.2 Identification locataire(s) (useFieldArray)
+│       ├── SectionA1.tsx              # A.1 Identification coopérative (Supabase + zodResolver)
+│       ├── SectionA2.tsx              # A.2 Locataire(s) (useFieldArray + zodResolver)
 │       ├── SectionB1.tsx              # B.1 Description logement
 │       ├── SectionB2.tsx              # B.2 Accessoires
 │       ├── SectionB3.tsx              # B.3 Avertisseurs de fumée
 │       ├── SectionC.tsx               # C. Durée du bail
-│       ├── SectionD1.tsx              # D.1 Coût du loyer
+│       ├── SectionD1.tsx              # D.1 Coût du loyer (calcul auto)
 │       ├── SectionD2.tsx              # D.2 Paiement
 │       ├── SectionE1.tsx              # E.1 Règlement immeuble
 │       ├── SectionE2.tsx              # E.2 Travaux et réparations
@@ -117,20 +173,36 @@ bail-tal-coop/
 │       ├── SectionF.tsx               # F. Restrictions (membre/non-membre)
 │       ├── SectionH1.tsx              # H.1 Solidarité
 │       ├── SectionH2.tsx              # H.2 Autres signataires (useFieldArray)
-│       └── MentionsLegalesSection.tsx # Mentions légales (statique)
+│       ├── MentionsLegalesSection.tsx  # Mentions légales (statique)
+│       ├── SectionRecapitulatif.tsx    # Récapitulatif (lecture seule)
+│       ├── SectionG.tsx               # G. Signatures (checkboxes)
+│       └── SectionPDF.tsx             # Génération PDF (window.print)
 ├── hooks/
-│   └── useBailForm.ts       # État formulaire, navigation 19 étapes, sauvegarde Supabase
+│   ├── useAuth.ts              # État d'authentification Supabase (user, session, loading)
+│   ├── useAutoSync.ts          # Auto-sync formulaire → état parent (watch + debounce 300ms)
+│   └── useBailForm.ts          # État formulaire, navigation 22 étapes, auth, validation, sauvegarde
 ├── lib/
-│   ├── supabase.ts          # Client Supabase (schéma core)
-│   └── utils.ts             # cn() helper, formatDate(), formatCurrency()
+│   ├── schemas.ts              # 18 schémas Zod + schéma maître bailFormDataSchema
+│   ├── supabase.ts             # Client Supabase (schéma core, auth activé)
+│   └── utils.ts                # cn() helper, formatDate(), formatCurrency()
+├── supabase/
+│   └── migrations/
+│       └── 20260919_add_rls_policies.sql  # Politiques RLS pour 7 tables
+├── tests/
+│   ├── setup.ts                # Setup vitest (@testing-library/jest-dom)
+│   ├── schemas.test.ts         # 56 tests — validation Zod
+│   ├── useBailForm.test.ts     # 19 tests — hook état/navigation/sauvegarde
+│   ├── useAutoSync.test.ts     # 6 tests — debounce/cleanup
+│   └── components.test.tsx     # 27 tests — rendu IntroductionSection, SectionC, D1, F
 ├── types/
-│   └── bail.ts              # Types TypeScript — toutes interfaces optionnelles
-├── next.config.js           # Configuration Next.js (TS + ESLint vérifiés au build)
-├── tailwind.config.ts       # Configuration Tailwind (couleurs tal-blue, tal-yellow)
-├── tsconfig.json            # Configuration TypeScript (strict: true)
-├── postcss.config.js        # Configuration PostCSS
-├── package.json             # Dépendances et scripts
-└── .env.example             # Variables d'environnement (template)
+│   └── bail.ts                 # Types TypeScript — toutes interfaces optionnelles
+├── vitest.config.ts            # Configuration Vitest (jsdom, alias @/)
+├── next.config.js              # Headers sécurité + configuration Next.js
+├── tailwind.config.ts          # Configuration Tailwind (couleurs tal-blue, tal-yellow)
+├── tsconfig.json               # Configuration TypeScript (strict: true)
+├── postcss.config.js           # Configuration PostCSS
+├── package.json                # Dépendances et scripts
+└── .env.example                # Variables d'environnement (template)
 ```
 
 ## Sections du bail (ordre de navigation)
@@ -156,6 +228,9 @@ bail-tal-coop/
 | 17 | H | h-1 | Solidarité entre colocataires |
 | 18 | H | h-2 | Autres signataires (cautions/garants) |
 | 19 | Mentions | mentions-1 | Mentions légales |
+| 20 | Finalisation | recap-1 | Récapitulatif |
+| 21 | Finalisation | g-1 | Signatures |
+| 22 | Finalisation | pdf-1 | Génération PDF |
 
 ## Intégration dans le portail locataires
 
@@ -193,18 +268,21 @@ npm run dev        # Serveur de développement Next.js
 npm run build      # Build production (TypeScript + ESLint vérifiés)
 npm run lint       # ESLint
 npm run type-check # Vérification TypeScript (tsc --noEmit)
+npm test           # Tests Vitest (108 tests)
 ```
 
 ## Notes
 
 - Ce projet est le **source de référence** des composants bail TAL
 - Les modifications futures doivent être synchronisées avec le portail locataires
-- La section G (Signatures) n'est pas encore implémentée (voir `MISE_A_JOUR_SECTION_G.md`)
-- Les données des coopératives sont chargées depuis `core.organizations` (plus de données hardcodées)
+- La section G (Signatures) utilise des checkboxes simples, pas de signature électronique conforme RFC 3161
+- La génération PDF utilise `window.print()` — à remplacer par une librairie (react-pdf, puppeteer)
+- Les données des coopératives sont chargées depuis `core.organizations` avec `.limit(100)`
 - Le gestionnaire et signataire sont stockés dans `organizations.settings` (JSONB)
 - Le build vérifie TypeScript et ESLint — zéro erreur tolérée
+- CI/CD : Pipeline GitHub Actions sur push/PR vers `main` (Node 18 + 20)
 - **Repo GitHub :** `IGC-Hub/bail-tal-cooperative`
 
 ---
 
-*Dernière mise à jour : 2026-08-04*
+*Dernière mise à jour : 2026-09-19*
