@@ -59,7 +59,8 @@ Formulaire de bail TAL (Tribunal administratif du logement) adapté aux coopéra
 - `core.buildings` — Immeubles (concierge, animaux, fumée, règlement)
 - `core.tenants` — Locataires
 - `core.lease_tenants` — Relation bail-locataires (multi-locataires)
-- `core.bail_generation_logs` — Logs de génération de bail
+- `core.bail_generation_logs` — Logs de génération de bail (lease_id, generated_by, pdf_url, status)
+- **Storage bucket** `bail-pdfs` — PDFs générés (public, limite 10 Mo, PDF uniquement)
 
 ### Conventions DB
 
@@ -132,6 +133,24 @@ Tous les champs des interfaces sont **optionnels** car le formulaire est rempli 
 | `SignaturesInfo` | SectionG |
 | `FinalisationInfo` | SectionPDF |
 
+### Génération PDF (`supabase/functions/generate-bail-pdf`)
+
+Edge Function Supabase (Deno) qui génère le PDF du bail via `pdf-lib` :
+
+```
+SectionPDF (bouton) → POST /functions/v1/generate-bail-pdf (JWT requis)
+  → Charge bail_tal_data depuis core.leases
+  → Génère PDF A4 (Helvetica, couleurs TAL, pagination auto)
+  → Upload dans Supabase Storage (bucket bail-pdfs)
+  → Met à jour bail_tal_statut='complete', bail_tal_lien_pdf=URL
+  → Log dans bail_generation_logs
+  → Retourne { pdf_url, generated_at }
+```
+
+Le PDF inclut toutes les sections (A→H + Signatures) avec labels, champs, checkboxes, séparateurs et pieds de page (nom coopérative + date + pagination).
+
+**Prérequis :** Le bucket `bail-pdfs` doit exister dans Supabase Storage avec les politiques RLS pour upload authentifié et lecture publique.
+
 ### Accessibilité (`components/ui/Input.tsx`)
 
 Le composant `Input` génère automatiquement un `id` via `useId()` et lie le `<label>` via `htmlFor`. En cas d'erreur : `aria-invalid`, `aria-describedby` pointant vers le message d'erreur avec `role="alert"`.
@@ -176,7 +195,7 @@ bail-tal-coop/
 │       ├── MentionsLegalesSection.tsx  # Mentions légales (statique)
 │       ├── SectionRecapitulatif.tsx    # Récapitulatif (lecture seule)
 │       ├── SectionG.tsx               # G. Signatures (checkboxes)
-│       └── SectionPDF.tsx             # Génération PDF (window.print)
+│       └── SectionPDF.tsx             # Génération PDF (appel Edge Function)
 ├── hooks/
 │   ├── useAuth.ts              # État d'authentification Supabase (user, session, loading)
 │   ├── useAutoSync.ts          # Auto-sync formulaire → état parent (watch + debounce 300ms)
@@ -186,6 +205,9 @@ bail-tal-coop/
 │   ├── supabase.ts             # Client Supabase (schéma core, auth activé)
 │   └── utils.ts                # cn() helper, formatDate(), formatCurrency()
 ├── supabase/
+│   ├── functions/
+│   │   └── generate-bail-pdf/
+│   │       └── index.ts            # Edge Function: génération PDF (pdf-lib + Storage)
 │   └── migrations/
 │       └── 20260919_add_rls_policies.sql  # Politiques RLS pour 7 tables
 ├── tests/
@@ -276,7 +298,7 @@ npm test           # Tests Vitest (108 tests)
 - Ce projet est le **source de référence** des composants bail TAL
 - Les modifications futures doivent être synchronisées avec le portail locataires
 - La section G (Signatures) utilise des checkboxes simples, pas de signature électronique conforme RFC 3161
-- La génération PDF utilise `window.print()` — à remplacer par une librairie (react-pdf, puppeteer)
+- La génération PDF utilise une Edge Function Supabase avec `pdf-lib` (stockage dans bucket `bail-pdfs`)
 - Les données des coopératives sont chargées depuis `core.organizations` avec `.limit(100)`
 - Le gestionnaire et signataire sont stockés dans `organizations.settings` (JSONB)
 - Le build vérifie TypeScript et ESLint — zéro erreur tolérée
