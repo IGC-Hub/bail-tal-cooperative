@@ -2,7 +2,11 @@
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useAutoSync } from '@/hooks/useAutoSync';
+import { conditionsSchema } from '@/lib/schemas';
 import { AlertBox } from '@/components/ui/AlertBox';
+import { ServicesConditions } from '@/types/bail';
 
 interface SectionE5Props {
   data?: {
@@ -13,13 +17,16 @@ interface SectionE5Props {
     animaux_permis?: boolean;
     animaux_details?: string;
   };
-  onSave: (data: any) => void;
+  onSave: (data: Partial<NonNullable<ServicesConditions['conditions']>>) => void;
 }
 
 export const SectionE5: React.FC<SectionE5Props> = ({ data, onSave }) => {
   const { register, handleSubmit, watch } = useForm({
     defaultValues: data,
+    resolver: zodResolver(conditionsSchema),
+    mode: 'onBlur',
   });
+  useAutoSync(watch, onSave);
 
   const sansFumee = watch('sans_fumee');
   const accesTerrain = watch('acces_terrain');

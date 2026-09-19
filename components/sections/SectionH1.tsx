@@ -2,8 +2,12 @@
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useAutoSync } from '@/hooks/useAutoSync';
+import { solidariteSchema } from '@/lib/schemas';
 import { Input } from '@/components/ui/Input';
 import { AlertBox } from '@/components/ui/AlertBox';
+import { SolidariteInfo } from '@/types/bail';
 
 interface SectionH1Props {
   data?: {
@@ -11,13 +15,16 @@ interface SectionH1Props {
     initiales_locataire1?: string;
     initiales_locataire2?: string;
   };
-  onSave: (data: any) => void;
+  onSave: (data: Partial<SolidariteInfo>) => void;
 }
 
 export const SectionH1: React.FC<SectionH1Props> = ({ data, onSave }) => {
   const { register, handleSubmit, watch, formState: { errors } } = useForm({
     defaultValues: data,
+    resolver: zodResolver(solidariteSchema),
+    mode: 'onBlur',
   });
+  useAutoSync(watch, onSave);
 
   const engagementSolidaire = watch('engagement_solidaire');
 

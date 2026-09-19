@@ -189,7 +189,7 @@ export interface ServicesConditions {
 }
 
 export interface RestrictionsInfo {
-  situation: 'membre' | 'non_membre' | null;
+  situation?: 'membre' | 'non_membre' | null;
   immeuble_recent?: boolean;
   immeuble_pret_date?: string;
   changement_affectation?: boolean;

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { BailFormData, FormState } from '@/types/bail';
-import { supabase } from '@/lib/supabase';
+import { supabase, getAuthenticatedUser } from '@/lib/supabase';
+import { bailFormDataSchema } from '@/lib/schemas';
 
 // Ordre de navigation linéaire de toutes les sous-sections
 const NAVIGATION_ORDER: { sectionId: string; subsectionId: string }[] = [
@@ -41,15 +42,12 @@ export function useBailForm(leaseId?: string) {
 
   const [completedSections, setCompletedSections] = useState<Set<string>>(new Set());
   const [isSaving, setIsSaving] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
-  // Charger les données existantes
-  useEffect(() => {
-    if (leaseId) {
-      loadFormData(leaseId);
-    }
-  }, [leaseId]);
+  // Ref pour loadFormData afin d'éviter le warning ESLint
+  const loadFormDataRef = useRef<((id: string) => Promise<void>) | undefined>(undefined);
 
-  const loadFormData = async (id: string) => {
+  const loadFormData = useCallback(async (id: string) => {
     if (!supabase) {
       console.warn('Supabase client not available');
       return;
@@ -83,17 +81,33 @@ export function useBailForm(leaseId?: string) {
     } catch (error) {
       console.error('Erreur lors du chargement:', error);
     }
-  };
+  }, []);
+
+  loadFormDataRef.current = loadFormData;
+
+  // Charger les données existantes
+  useEffect(() => {
+    if (leaseId && loadFormDataRef.current) {
+      loadFormDataRef.current(leaseId);
+    }
+  }, [leaseId]);
 
   const updateFormData = useCallback((sectionData: Partial<BailFormData>) => {
-    setFormState(prev => ({
-      ...prev,
-      data: {
-        ...prev.data,
-        ...sectionData,
-      },
-      isDirty: true,
-    }));
+    setFormState(prev => {
+      // Marquer la sous-section courante comme complétée si des données arrivent
+      const hasData = Object.values(sectionData).some(v => v !== undefined && v !== null);
+      if (hasData) {
+        setCompletedSections(cs => new Set([...cs, prev.currentSubsection]));
+      }
+      return {
+        ...prev,
+        data: {
+          ...prev.data,
+          ...sectionData,
+        },
+        isDirty: true,
+      };
+    });
   }, []);
 
   const saveFormData = useCallback(async () => {
@@ -101,6 +115,28 @@ export function useBailForm(leaseId?: string) {
     if (!supabase || !currentLeaseId) {
       console.error('Sauvegarde impossible: client Supabase ou leaseId manquant');
       return;
+    }
+
+    // Vérifier l'authentification avant la sauvegarde
+    const user = await getAuthenticatedUser();
+    if (!user) {
+      setAuthError('Vous devez être connecté pour sauvegarder le bail.');
+      console.error('Sauvegarde bloquée: utilisateur non authentifié');
+      return;
+    }
+    setAuthError(null);
+
+    // Valider les données avec le schéma Zod avant sauvegarde
+    const validation = bailFormDataSchema.safeParse(formState.data);
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      for (const issue of validation.error.issues) {
+        const path = issue.path.join('.');
+        fieldErrors[path] = issue.message;
+      }
+      setFormState(prev => ({ ...prev, errors: fieldErrors }));
+      console.warn('Validation échouée:', validation.error.issues);
+      // On sauvegarde quand même (formulaire progressif) mais on affiche les erreurs
     }
 
     setIsSaving(true);
@@ -126,6 +162,7 @@ export function useBailForm(leaseId?: string) {
       setFormState(prev => ({
         ...prev,
         isDirty: false,
+        errors: {},
         lastSaved: new Date().toLocaleTimeString('fr-CA'),
       }));
     } catch (error) {
@@ -193,6 +230,7 @@ export function useBailForm(leaseId?: string) {
     formState,
     completedSections,
     isSaving,
+    authError,
     updateFormData,
     saveFormData,
     navigateToSection,

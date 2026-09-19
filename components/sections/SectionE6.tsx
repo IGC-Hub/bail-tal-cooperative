@@ -2,19 +2,26 @@
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useAutoSync } from '@/hooks/useAutoSync';
+import { autresServicesSchema } from '@/lib/schemas';
 import { AlertBox } from '@/components/ui/AlertBox';
+import { ServicesConditions } from '@/types/bail';
 
 interface SectionE6Props {
   data?: {
     autres_services?: string;
   };
-  onSave: (data: any) => void;
+  onSave: (data: { autres_services?: string }) => void;
 }
 
 export const SectionE6: React.FC<SectionE6Props> = ({ data, onSave }) => {
-  const { register, handleSubmit } = useForm({
+  const { register, handleSubmit, watch } = useForm({
     defaultValues: data,
+    resolver: zodResolver(autresServicesSchema),
+    mode: 'onBlur',
   });
+  useAutoSync(watch, onSave);
 
   return (
     <div className="section-card">

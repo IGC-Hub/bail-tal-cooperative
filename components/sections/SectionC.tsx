@@ -2,9 +2,12 @@
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '@/components/ui/Input';
 import { AlertBox } from '@/components/ui/AlertBox';
 import { DureeBail } from '@/types/bail';
+import { dureeSchema } from '@/lib/schemas';
+import { useAutoSync } from '@/hooks/useAutoSync';
 
 interface SectionCProps {
   data?: Partial<DureeBail>;
@@ -14,7 +17,10 @@ interface SectionCProps {
 export const SectionC: React.FC<SectionCProps> = ({ data, onSave }) => {
   const { register, handleSubmit, watch, formState: { errors } } = useForm<DureeBail>({
     defaultValues: data,
+    resolver: zodResolver(dureeSchema),
+    mode: 'onBlur',
   });
+  useAutoSync(watch, onSave);
 
   const bailType = watch('type');
 

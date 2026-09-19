@@ -2,6 +2,9 @@
 
 import React from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useAutoSync } from '@/hooks/useAutoSync';
+import { autresSignatairesFormSchema } from '@/lib/schemas';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { AlertBox } from '@/components/ui/AlertBox';
@@ -20,12 +23,15 @@ export const SectionH2: React.FC<SectionH2Props> = ({ data, onSave }) => {
     defaultValues: {
       autres_signataires: data?.autres_signataires || [],
     },
+    resolver: zodResolver(autresSignatairesFormSchema),
+    mode: 'onBlur',
   });
 
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'autres_signataires',
   });
+  useAutoSync(watch, onSave);
 
   return (
     <div className="section-card">

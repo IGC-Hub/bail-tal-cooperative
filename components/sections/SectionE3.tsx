@@ -2,7 +2,11 @@
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useAutoSync } from '@/hooks/useAutoSync';
+import { conciergeSchema } from '@/lib/schemas';
 import { Input } from '@/components/ui/Input';
+import { ServicesConditions } from '@/types/bail';
 
 interface SectionE3Props {
   data?: {
@@ -12,13 +16,16 @@ interface SectionE3Props {
     telephone_cell?: string;
     courriel?: string;
   };
-  onSave: (data: any) => void;
+  onSave: (data: Partial<NonNullable<ServicesConditions['service_concierge']>>) => void;
 }
 
 export const SectionE3: React.FC<SectionE3Props> = ({ data, onSave }) => {
   const { register, handleSubmit, watch, formState: { errors } } = useForm({
     defaultValues: data,
+    resolver: zodResolver(conciergeSchema),
+    mode: 'onBlur',
   });
+  useAutoSync(watch, onSave);
 
   const serviceActif = watch('service_concierge_actif');
 

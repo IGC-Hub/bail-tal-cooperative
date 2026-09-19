@@ -2,8 +2,12 @@
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useAutoSync } from '@/hooks/useAutoSync';
+import { restrictionsSchema } from '@/lib/schemas';
 import { Input } from '@/components/ui/Input';
 import { AlertBox } from '@/components/ui/AlertBox';
+import { RestrictionsInfo } from '@/types/bail';
 
 interface SectionFProps {
   data?: {
@@ -14,13 +18,16 @@ interface SectionFProps {
     changement_date?: string;
     loyer_maximal?: number;
   };
-  onSave: (data: any) => void;
+  onSave: (data: Partial<RestrictionsInfo>) => void;
 }
 
 export const SectionF: React.FC<SectionFProps> = ({ data, onSave }) => {
   const { register, handleSubmit, watch, formState: { errors } } = useForm({
     defaultValues: data,
+    resolver: zodResolver(restrictionsSchema),
+    mode: 'onBlur',
   });
+  useAutoSync(watch, onSave);
 
   const situation = watch('situation');
   const immeuble = watch('immeuble_recent');

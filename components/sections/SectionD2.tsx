@@ -2,7 +2,11 @@
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '@/components/ui/Input';
+import { PaiementInfo } from '@/types/bail';
+import { paiementSchema } from '@/lib/schemas';
+import { useAutoSync } from '@/hooks/useAutoSync';
 
 interface SectionD2Props {
   data?: {
@@ -14,13 +18,16 @@ interface SectionD2Props {
     cheques_postdates?: boolean;
     lieu?: string;
   };
-  onSave: (data: any) => void;
+  onSave: (data: Partial<PaiementInfo>) => void;
 }
 
 export const SectionD2: React.FC<SectionD2Props> = ({ data, onSave }) => {
   const { register, handleSubmit, watch, formState: { errors } } = useForm({
     defaultValues: data,
+    resolver: zodResolver(paiementSchema),
+    mode: 'onBlur',
   });
+  useAutoSync(watch, onSave);
 
   const modePaiement = watch('mode');
   const periode = watch('periode');

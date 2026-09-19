@@ -2,8 +2,11 @@
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '@/components/ui/Input';
 import { AlertBox } from '@/components/ui/AlertBox';
+import { reglementSchema } from '@/lib/schemas';
+import { useAutoSync } from '@/hooks/useAutoSync';
 
 interface SectionE1Props {
   data?: {
@@ -11,13 +14,16 @@ interface SectionE1Props {
     date_remise?: string;
     initiales_locataire?: string;
   };
-  onSave: (data: any) => void;
+  onSave: (data: { reglement_remis?: boolean; date_remise?: string; initiales_locataire?: string }) => void;
 }
 
 export const SectionE1: React.FC<SectionE1Props> = ({ data, onSave }) => {
   const { register, handleSubmit, watch, formState: { errors } } = useForm({
     defaultValues: data,
+    resolver: zodResolver(reglementSchema),
+    mode: 'onBlur',
   });
+  useAutoSync(watch, onSave);
 
   const reglementRemis = watch('reglement_remis');
 

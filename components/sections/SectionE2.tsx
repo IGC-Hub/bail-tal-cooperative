@@ -2,20 +2,27 @@
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useAutoSync } from '@/hooks/useAutoSync';
+import { travauxSchema } from '@/lib/schemas';
 import { AlertBox } from '@/components/ui/AlertBox';
+import { ServicesConditions } from '@/types/bail';
 
 interface SectionE2Props {
   data?: {
     travaux_avant_delivrance?: string;
     travaux_en_cours_bail?: string;
   };
-  onSave: (data: any) => void;
+  onSave: (data: Partial<NonNullable<ServicesConditions['travaux_reparations']>>) => void;
 }
 
 export const SectionE2: React.FC<SectionE2Props> = ({ data, onSave }) => {
-  const { register, handleSubmit } = useForm({
+  const { register, handleSubmit, watch } = useForm({
     defaultValues: data,
+    resolver: zodResolver(travauxSchema),
+    mode: 'onBlur',
   });
+  useAutoSync(watch, onSave);
 
   return (
     <div className="section-card">

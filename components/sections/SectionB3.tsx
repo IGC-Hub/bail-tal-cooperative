@@ -2,8 +2,12 @@
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertBox } from '@/components/ui/AlertBox';
 import { Input } from '@/components/ui/Input';
+import { LogementInfo } from '@/types/bail';
+import { logementSchema } from '@/lib/schemas';
+import { useAutoSync } from '@/hooks/useAutoSync';
 
 interface SectionB3Props {
   data?: {
@@ -12,13 +16,16 @@ interface SectionB3Props {
     engagement_initiales_coop?: string;
     engagement_initiales_locataire?: string;
   };
-  onSave: (data: any) => void;
+  onSave: (data: Partial<LogementInfo>) => void;
 }
 
 export const SectionB3: React.FC<SectionB3Props> = ({ data, onSave }) => {
   const { register, handleSubmit, watch, formState: { errors } } = useForm({
     defaultValues: data,
+    resolver: zodResolver(logementSchema),
+    mode: 'onBlur',
   });
+  useAutoSync(watch, onSave);
 
   const engagementAccepted = watch('engagement_accepted');
 

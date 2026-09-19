@@ -2,6 +2,9 @@
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useAutoSync } from '@/hooks/useAutoSync';
+import { servicesTaxesSchema } from '@/lib/schemas';
 import { AlertBox } from '@/components/ui/AlertBox';
 
 import { ServicesConditions } from '@/types/bail';
@@ -14,9 +17,12 @@ interface SectionE4Props {
 }
 
 export const SectionE4: React.FC<SectionE4Props> = ({ data, onSave }) => {
-  const { register, handleSubmit } = useForm<ServicesTaxesData>({
+  const { register, handleSubmit, watch } = useForm<ServicesTaxesData>({
     defaultValues: data,
+    resolver: zodResolver(servicesTaxesSchema),
+    mode: 'onBlur',
   });
+  useAutoSync(watch, onSave);
 
   const RadioGroup = ({ name, label }: { name: keyof ServicesTaxesData; label: string }) => (
     <div className="flex items-center justify-between py-3 border-b border-gray-200">

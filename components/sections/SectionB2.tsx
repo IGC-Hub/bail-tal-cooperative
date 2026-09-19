@@ -2,7 +2,10 @@
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { LogementInfo } from '@/types/bail';
+import { logementSchema } from '@/lib/schemas';
+import { useAutoSync } from '@/hooks/useAutoSync';
 
 interface SectionB2Props {
   data?: Partial<LogementInfo>;
@@ -12,7 +15,10 @@ interface SectionB2Props {
 export const SectionB2: React.FC<SectionB2Props> = ({ data, onSave }) => {
   const { register, handleSubmit, watch } = useForm<LogementInfo>({
     defaultValues: data,
+    resolver: zodResolver(logementSchema),
+    mode: 'onBlur',
   });
+  useAutoSync(watch, onSave);
 
   return (
     <div className="section-card">

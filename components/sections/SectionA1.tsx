@@ -2,9 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '@/components/ui/Input';
 import { CooperativeInfo } from '@/types/bail';
 import { supabase } from '@/lib/supabase';
+import { cooperativeSchema } from '@/lib/schemas';
+import { useAutoSync } from '@/hooks/useAutoSync';
 
 interface OrganizationRow {
   id: string;
@@ -37,7 +40,10 @@ export const SectionA1: React.FC<SectionA1Props> = ({ data, onSave }) => {
 
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<CooperativeInfo>({
     defaultValues: data,
+    resolver: zodResolver(cooperativeSchema),
+    mode: 'onBlur',
   });
+  useAutoSync(watch, onSave);
 
   const organisationSelectionnee = watch('organisation_code');
 
@@ -54,7 +60,8 @@ export const SectionA1: React.FC<SectionA1Props> = ({ data, onSave }) => {
           .select('id, code, name, legal_name, address, city, postal_code, phone, email, settings')
           .eq('type', 'cooperative')
           .eq('is_active', true)
-          .order('code');
+          .order('code')
+          .limit(100);
 
         if (error) throw error;
         setCooperatives(orgs ?? []);

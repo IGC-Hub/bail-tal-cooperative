@@ -2,10 +2,13 @@
 
 import React from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { LocataireInfo } from '@/types/bail';
 import { Plus, X } from 'lucide-react';
+import { locataireFormSchema } from '@/lib/schemas';
+import { useAutoSync } from '@/hooks/useAutoSync';
 
 interface SectionA2FormData {
   locataire_principal: Partial<LocataireInfo>;
@@ -122,14 +125,17 @@ function LocataireFields({
 }
 
 export const SectionA2: React.FC<SectionA2Props> = ({ data, onSave }) => {
-  const { register, control, handleSubmit, formState: { errors } } = useForm<SectionA2FormData>({
+  const { register, control, handleSubmit, watch, formState: { errors } } = useForm<SectionA2FormData>({
     defaultValues: {
       locataire_principal: data?.locataire_principal ?? EMPTY_LOCATAIRE,
       locataires_supplementaires: data?.locataire_supplementaire
         ? [data.locataire_supplementaire]
         : [],
     },
+    resolver: zodResolver(locataireFormSchema),
+    mode: 'onBlur',
   });
+  useAutoSync(watch, (data) => onSave({ locataire_principal: data.locataire_principal, locataire_supplementaire: data.locataires_supplementaires[0] }));
 
   const { fields, append, remove } = useFieldArray({
     control,

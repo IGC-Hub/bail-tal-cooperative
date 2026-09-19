@@ -2,8 +2,12 @@
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '@/components/ui/Input';
 import { AlertBox } from '@/components/ui/AlertBox';
+import { LoyerInfo } from '@/types/bail';
+import { loyerSchema } from '@/lib/schemas';
+import { useAutoSync } from '@/hooks/useAutoSync';
 
 interface SectionD1Props {
   data?: {
@@ -14,13 +18,16 @@ interface SectionD1Props {
     programme_subvention?: boolean;
     details_subvention?: string;
   };
-  onSave: (data: any) => void;
+  onSave: (data: Partial<LoyerInfo>) => void;
 }
 
 export const SectionD1: React.FC<SectionD1Props> = ({ data, onSave }) => {
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
     defaultValues: data,
+    resolver: zodResolver(loyerSchema),
+    mode: 'onBlur',
   });
+  useAutoSync(watch, onSave);
 
   const loyerBase = watch('loyer_base');
   const coutServices = watch('cout_services');

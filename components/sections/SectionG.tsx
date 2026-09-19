@@ -2,6 +2,9 @@
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useAutoSync } from '@/hooks/useAutoSync';
+import { signaturesSchema } from '@/lib/schemas';
 import { Input } from '@/components/ui/Input';
 import { AlertBox } from '@/components/ui/AlertBox';
 import { SignaturesInfo } from '@/types/bail';
@@ -35,7 +38,10 @@ export const SectionG: React.FC<SectionGProps> = ({
       signature_locataire2_lieu: data?.signature_locataire2_lieu,
       ...data,
     },
+    resolver: zodResolver(signaturesSchema),
+    mode: 'onBlur',
   });
+  useAutoSync(watch, onSave);
 
   const coopAccepte = watch('signature_coop_accepte');
   const loc1Accepte = watch('signature_locataire1_accepte');
